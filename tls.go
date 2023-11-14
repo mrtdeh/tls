@@ -11,13 +11,17 @@ import (
 var config *tls.Config
 
 type Config struct {
-	CAPath     string
-	CertPath   string
-	KeyPath    string
-	SkipVerify bool
+	CAPath         string
+	CertPath       string
+	KeyPath        string
+	SkipVerify     bool
+	OnVerifyFailed func(err error)
 }
 
+var onVerifyFailed func(err error)
+
 func LoadTLSCredentials(opt Config) (*tls.Config, error) {
+	onVerifyFailed = opt.OnVerifyFailed
 
 	ca := opt.CAPath
 	cert := opt.CertPath
@@ -46,10 +50,11 @@ func LoadTLSCredentials(opt Config) (*tls.Config, error) {
 	}
 	// Create the credentials and return it
 	config = &tls.Config{
-		Certificates:          []tls.Certificate{clientCert},
-		RootCAs:               certPool,
-		MinVersion:            tls.VersionTLS12,
-		InsecureSkipVerify:    true,
+		Certificates:       []tls.Certificate{clientCert},
+		RootCAs:            certPool,
+		MinVersion:         tls.VersionTLS12,
+		InsecureSkipVerify: true,
+
 		VerifyPeerCertificate: verifyPeerCertFunc(certPool),
 		CipherSuites: []uint16{
 			// tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
@@ -86,8 +91,13 @@ func verifyPeerCertFunc(pool *x509.CertPool) func([][]byte, [][]*x509.Certificat
 
 		opts := x509.VerifyOptions{Roots: pool}
 		if _, err = cert.Verify(opts); err != nil {
+			// send error to callback
+			if onVerifyFailed != nil {
+				onVerifyFailed(err)
+			}
 			return err
 		}
 		return nil
 	}
+
 }
