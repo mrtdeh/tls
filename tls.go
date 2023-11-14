@@ -15,10 +15,10 @@ type Config struct {
 	CertPath       string
 	KeyPath        string
 	SkipVerify     bool
-	OnVerifyFailed func(err error)
+	OnVerifyFailed func(reason string)
 }
 
-var onVerifyFailed func(err error)
+var onVerifyFailed func(reason string)
 
 func LoadTLSCredentials(opt Config) (*tls.Config, error) {
 	onVerifyFailed = opt.OnVerifyFailed
@@ -88,16 +88,23 @@ func verifyPeerCertFunc(pool *x509.CertPool) func([][]byte, [][]*x509.Certificat
 		if err != nil {
 			return err
 		}
-
+		var reason string
 		opts := x509.VerifyOptions{Roots: pool}
-		if _, err = cert.Verify(opts); err != nil {
-			// send error to callback
-			if onVerifyFailed != nil {
-				onVerifyFailed(err)
-			}
-			return err
+		_, err = cert.Verify(opts)
+		// send error to callback
+		if e, ok := err.(*x509.CertificateInvalidError); ok {
+			// return the specific reason for the certificate validation failure
+			reason = e.Error()
+		} else {
+			// return other types of errors
+			reason = err.Error()
 		}
-		return nil
+
+		if onVerifyFailed != nil {
+			onVerifyFailed(reason)
+		}
+
+		return err
 	}
 
 }
