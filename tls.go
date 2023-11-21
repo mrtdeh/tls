@@ -11,14 +11,18 @@ import (
 var config *tls.Config
 
 type Config struct {
-	CAPath     string
-	CertPath   string
-	KeyPath    string
-	SkipVerify bool
+	CAPath        string
+	CertPath      string
+	KeyPath       string
+	SkipVerify    bool
+	OnVerifyError func(error)
 }
+
+var handleVerifyError func(error)
 
 func LoadTLSCredentials(opt Config) (*tls.Config, error) {
 
+	handleVerifyError = opt.OnVerifyError
 	ca := opt.CAPath
 	cert := opt.CertPath
 	key := opt.KeyPath
@@ -87,6 +91,9 @@ func verifyPeerCertFunc(pool *x509.CertPool) func([][]byte, [][]*x509.Certificat
 
 		opts := x509.VerifyOptions{Roots: pool}
 		if _, err = cert.Verify(opts); err != nil {
+			if handleVerifyError != nil {
+				handleVerifyError(err)
+			}
 			return err
 		}
 
