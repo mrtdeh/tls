@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-var config *tls.Config
+// var config *tls.Config
 
 type Config struct {
 	CAPath        string
@@ -32,9 +32,9 @@ func LoadTLSCredentials(opt Config) (*tls.Config, error) {
 		return nil, nil
 	}
 	// return tls config if not nil
-	if config != nil {
-		return config, nil
-	}
+	// if config != nil {
+	// 	return config, nil
+	// }
 	// Load certificate of the CA who signed server's certificate
 	pemServerCA, err := os.ReadFile(ca)
 	if err != nil {
@@ -46,7 +46,7 @@ func LoadTLSCredentials(opt Config) (*tls.Config, error) {
 	}
 
 	// Create the credentials and return it
-	config = &tls.Config{
+	config := &tls.Config{
 		RootCAs:            certPool,
 		MinVersion:         tls.VersionTLS12,
 		InsecureSkipVerify: true,
