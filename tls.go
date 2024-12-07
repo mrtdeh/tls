@@ -49,6 +49,7 @@ func LoadTLSCredentials(opt Config) (*tls.Config, error) {
 	config := &tls.Config{
 		RootCAs:            certPool,
 		MinVersion:         tls.VersionTLS12,
+		MaxVersion:         tls.VersionTLS12,
 		InsecureSkipVerify: true,
 
 		VerifyPeerCertificate: verifyPeerCertFunc(certPool),
@@ -90,6 +91,7 @@ func verifyPeerCertFunc(pool *x509.CertPool) func([][]byte, [][]*x509.Certificat
 		opts := x509.VerifyOptions{Roots: pool}
 		if _, err = cert.Verify(opts); err != nil {
 			if handleVerifyError != nil {
+				fmt.Println("tls error : ", err)
 				handleVerifyError(err)
 			}
 			return err
